@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
-import { Tone, Topic } from '../types';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Tone, Topic, ImageStyle } from '../types';
+import { Sparkles, Loader2, Palette } from 'lucide-react';
 
 interface GeneratorFormProps {
-  onGenerate: (topic: Topic, tone: Tone, context: string) => void;
+  onGenerate: (topic: Topic, tone: Tone, style: ImageStyle, context: string) => void;
   isGenerating: boolean;
 }
 
 export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isGenerating }) => {
   const [topic, setTopic] = useState<Topic>(Topic.GENERAL_RECOVERY);
   const [tone, setTone] = useState<Tone>(Tone.WARM_INVITING);
+  const [style, setStyle] = useState<ImageStyle>(ImageStyle.PHOTOREALISTIC);
   const [context, setContext] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onGenerate(topic, tone, context);
+    onGenerate(topic, tone, style, context);
   };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Topic Selection */}
           <div className="space-y-2">
@@ -54,6 +55,29 @@ export const GeneratorForm: React.FC<GeneratorFormProps> = ({ onGenerate, isGene
               >
                 {Object.values(Tone).map((t) => (
                   <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Image Style Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <Palette className="w-4 h-4 text-slate-400" />
+              Image Style
+            </label>
+            <div className="relative">
+              <select
+                value={style}
+                onChange={(e) => setStyle(e.target.value as ImageStyle)}
+                className="w-full appearance-none bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block p-3 pr-8"
+                disabled={isGenerating}
+              >
+                {Object.values(ImageStyle).map((s) => (
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">

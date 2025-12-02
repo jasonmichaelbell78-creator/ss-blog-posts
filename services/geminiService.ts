@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { Tone, Topic, GeneratedContent } from '../types';
+import { Tone, Topic, ImageStyle, GeneratedContent } from '../types';
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -27,11 +27,18 @@ export const generatePostIdeas = async (topic: Topic, tone: Tone, customContext?
     
     Brand Voice:
     - Compassionate, professional, and hopeful.
-    - Deeply rooted in the Nashville community.
-    - Emphasize "Sober Solutions" as a safe haven.
+    - Deeply rooted in the Nashville community (mention local vibes where appropriate).
+    - Emphasize "Sober Solutions" as a safe haven and a place of transformation.
 
     Task:
     Generate 3 distinct content options based on the user's request.
+
+    Content Guidelines:
+    - For "Family" topics: Focus on healing relationships, setting boundaries, and the role of a support system.
+    - For "Holistic" topics: Mention the importance of routine, nature, nutrition, and mindfulness in sobriety.
+    - For "Nashville" topics: Reference local culture, nature (parks, greenways), or the vibrant recovery community in TN.
+    - For "Sober Solutions" brand: Highlight the home-like environment, structure, and brotherhood/community.
+    
     Ensure the "imagePrompt" is descriptive enough for an AI image generator (e.g., "A warm, sunlit living room with comfortable seating, cinematic lighting, photorealistic").
   `;
 
@@ -66,15 +73,41 @@ export const generatePostIdeas = async (topic: Topic, tone: Tone, customContext?
   }
 };
 
-export const generatePostImage = async (imagePrompt: string): Promise<string | undefined> => {
+const VARIATION_MODIFIERS = [
+  "seen from a low angle",
+  "close-up detail shot",
+  "wide panoramic view",
+  "shot with a macro lens",
+  "golden hour lighting",
+  "blue hour lighting",
+  "soft morning mist",
+  "dramatic high contrast",
+  "overhead drone view",
+  "side profile view",
+  "bokeh background"
+];
+
+export const generatePostImage = async (imagePrompt: string, style: ImageStyle = ImageStyle.PHOTOREALISTIC, isRegeneration: boolean = false): Promise<string | undefined> => {
   const model = "gemini-2.5-flash-image";
+
+  // Construct the final prompt with style and potential random variation
+  let finalPrompt = `${imagePrompt}, Style: ${style}`;
+  
+  // If regenerating, force difference by appending a random modifier
+  if (isRegeneration) {
+    const randomModifier = VARIATION_MODIFIERS[Math.floor(Math.random() * VARIATION_MODIFIERS.length)];
+    finalPrompt += `, ${randomModifier}, distinct variation`;
+  }
+
+  // Append quality keywords based on style (general improvements)
+  finalPrompt += ", high quality, 4k";
 
   try {
     const response = await ai.models.generateContent({
       model,
       contents: {
         parts: [
-           { text: imagePrompt + ", photorealistic, 4k, warm lighting, high quality" }
+           { text: finalPrompt }
         ]
       },
       config: {

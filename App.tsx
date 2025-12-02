@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeneratorForm } from './components/GeneratorForm';
 import { PostCard } from './components/PostCard';
-import { FullPost, Topic, Tone } from './types';
+import { FullPost, Topic, Tone, ImageStyle } from './types';
 import { generatePostIdeas, generatePostImage } from './services/geminiService';
 import { Layout, Leaf } from 'lucide-react';
 
@@ -10,11 +10,15 @@ export default function App() {
   const [posts, setPosts] = useState<FullPost[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Keep track of the current style for regenerations
+  const [currentStyle, setCurrentStyle] = useState<ImageStyle>(ImageStyle.PHOTOREALISTIC);
 
-  const handleGenerate = useCallback(async (topic: Topic, tone: Tone, context: string) => {
+  const handleGenerate = useCallback(async (topic: Topic, tone: Tone, style: ImageStyle, context: string) => {
     setIsGenerating(true);
     setError(null);
     setPosts([]); // Clear previous results
+    setCurrentStyle(style);
 
     try {
       // 1. Generate Text Content
@@ -37,7 +41,8 @@ export default function App() {
       // 2. Generate Images in Parallel (Background)
       initialPosts.forEach(async (post) => {
         try {
-          const imageUrl = await generatePostImage(post.imagePrompt);
+          // Pass style, isRegeneration = false
+          const imageUrl = await generatePostImage(post.imagePrompt, style, false);
           setPosts(currentPosts => 
             currentPosts.map(p => 
               p.id === post.id 
@@ -63,6 +68,36 @@ export default function App() {
       setIsGenerating(false);
     }
   }, []);
+
+  const handleRegenerateImage = useCallback(async (id: string, prompt: string) => {
+    // Set loading state for specific post
+    setPosts(currentPosts => 
+      currentPosts.map(p => 
+        p.id === id ? { ...p, isImageLoading: true } : p
+      )
+    );
+
+    try {
+      // Re-run image generation with isRegeneration = true to force variance
+      const imageUrl = await generatePostImage(prompt, currentStyle, true);
+      
+      setPosts(currentPosts => 
+        currentPosts.map(p => 
+          p.id === id 
+            ? { ...p, imageUrl, isImageLoading: false } 
+            : p
+        )
+      );
+    } catch (err) {
+      console.error(`Failed to regenerate image for post ${id}`, err);
+      // Reset loading state on failure, keep old image if it existed (or undefined)
+      setPosts(currentPosts => 
+        currentPosts.map(p => 
+          p.id === id ? { ...p, isImageLoading: false } : p
+        )
+      );
+    }
+  }, [currentStyle]);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -96,7 +131,7 @@ export default function App() {
         </div>
 
         {/* Input Form */}
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
             <GeneratorForm onGenerate={handleGenerate} isGenerating={isGenerating} />
         </div>
 
@@ -118,7 +153,10 @@ export default function App() {
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                {posts.map((post) => (
                  <div key={post.id} className="h-full">
-                    <PostCard post={post} />
+                    <PostCard 
+                      post={post} 
+                      onRegenerateImage={handleRegenerateImage}
+                    />
                  </div>
                ))}
              </div>

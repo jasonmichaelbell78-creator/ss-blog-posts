@@ -1,13 +1,14 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FullPost } from '../types';
-import { Copy, Facebook, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Copy, Facebook, FileText, Image as ImageIcon, Loader2, RefreshCw } from 'lucide-react';
 
 interface PostCardProps {
   post: FullPost;
+  onRegenerateImage: (id: string, prompt: string) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onRegenerateImage }) => {
   const [activeTab, setActiveTab] = React.useState<'blog' | 'facebook'>('blog');
   const [copied, setCopied] = React.useState(false);
 
@@ -47,6 +48,17 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
             <ImageIcon className="w-10 h-10" />
             <span className="ml-2">Image Generation Failed</span>
           </div>
+        )}
+
+        {/* Regenerate Button - Visible on hover or if image failed, but not while loading */}
+        {!post.isImageLoading && (
+          <button
+            onClick={() => onRegenerateImage(post.id, post.imagePrompt)}
+            className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white text-teal-700 rounded-full shadow-md backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+            title="Regenerate Image"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         )}
       </div>
 
